@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sso/internal/domain/models"
-	"sso/internal/storage"
+
+	"grpc-service-ref/internal/domain/models"
+	"grpc-service-ref/internal/storage"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -15,7 +16,7 @@ type Storage struct {
 	db *sql.DB
 }
 
-func  New(storagePath string) (*Storage, error) {
+func New(storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.New"
 
 	db, err := sql.Open("sqlite3", storagePath)

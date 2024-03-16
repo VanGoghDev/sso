@@ -5,11 +5,8 @@ import (
 	"flag"
 	"fmt"
 
-	// Библиотека для миграций
 	"github.com/golang-migrate/migrate/v4"
-	// Драйвер для выполнения миграций SQLite 3
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	// Драйвер для получения миграций из файлов
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -18,14 +15,14 @@ func main() {
 
 	flag.StringVar(&storagePath, "storage-path", "", "path to storage")
 	flag.StringVar(&migrationsPath, "migrations-path", "", "path to migrations")
-	flag.StringVar(&migrationsTable, "migrations-table", "migrations", "name of migration")
+	flag.StringVar(&migrationsTable, "migrations-table", "migrations", "name of migrations table")
 	flag.Parse()
 
 	if storagePath == "" {
-		panic("storage path required")
+		panic("storage-path is required")
 	}
 	if migrationsPath == "" {
-		panic("migration path required")
+		panic("migrations-path is required")
 	}
 
 	m, err := migrate.New(
@@ -39,6 +36,7 @@ func main() {
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
 			fmt.Println("no migrations to apply")
+
 			return
 		}
 
@@ -46,4 +44,19 @@ func main() {
 	}
 
 	fmt.Println("migrations applied")
+}
+
+// Log represents the logger
+type Log struct {
+	verbose bool
+}
+
+// Printf prints out formatted string into a log
+func (l *Log) Printf(format string, v ...interface{}) {
+	fmt.Printf(format, v...)
+}
+
+// Verbose shows if verbose print enabled
+func (l *Log) Verbose() bool {
+	return false
 }

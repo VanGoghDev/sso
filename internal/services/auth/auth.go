@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sso/internal/domain/models"
-	"sso/internal/lib/jwt"
-	"sso/internal/lib/logger/sl"
-	"sso/internal/storage"
 	"time"
+
+	"grpc-service-ref/internal/domain/models"
+	"grpc-service-ref/internal/lib/jwt"
+	"grpc-service-ref/internal/lib/logger/sl"
+	"grpc-service-ref/internal/storage"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -24,10 +25,9 @@ type Auth struct {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidCAppId      = errors.New("invalid app id")
-	ErrUserExists         = errors.New("user already exists")
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
 type UserSaver interface {
 	SaveUser(
 		ctx context.Context,
@@ -38,7 +38,7 @@ type UserSaver interface {
 
 type UserProvider interface {
 	User(ctx context.Context, email string) (models.User, error)
-	IsAdmin(ctx context.Context, userId int64) (bool, error)
+	IsAdmin(ctx context.Context, userID int64) (bool, error)
 }
 
 type AppProvider interface {
@@ -137,12 +137,6 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, pass string) (
 
 	id, err := a.usrSaver.SaveUser(ctx, email, passHash)
 	if err != nil {
-		if errors.Is(err, storage.ErrUserExists) {
-			log.Warn("user not found", sl.Err(err))
-
-			return 0, fmt.Errorf("%s: %w", op, ErrUserExists)
-		}
-
 		log.Error("failed to save user", sl.Err(err))
 
 		return 0, fmt.Errorf("%s: %w", op, err)
@@ -164,12 +158,6 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 	isAdmin, err := a.usrProvider.IsAdmin(ctx, userID)
 	if err != nil {
-		if errors.Is(err, storage.ErrAppNotFound) {
-			log.Warn("user not found", sl.Err(err))
-
-			return false, fmt.Errorf("%s: %w", op, ErrInvalidCAppId)
-		}
-
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 
