@@ -9,7 +9,7 @@ import (
 
 	"grpc-service-ref/internal/config"
 
-	ssov1 "github.com/JustSkiv/protos/gen/go/sso"
+	ssov1 "github.com/VanGoghDev/protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

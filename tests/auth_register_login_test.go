@@ -6,7 +6,7 @@ import (
 
 	"grpc-service-ref/tests/suite"
 
-	ssov1 "github.com/JustSkiv/protos/gen/go/sso"
+	ssov1 "github.com/VanGoghDev/protos/gen/go/sso"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"

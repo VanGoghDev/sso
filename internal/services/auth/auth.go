@@ -34,6 +34,10 @@ type UserSaver interface {
 		email string,
 		passHash []byte,
 	) (uid int64, err error)
+	VerifyUser(
+		ctx context.Context,
+		email string,
+	) (int64, error)
 }
 
 type UserProvider interface {

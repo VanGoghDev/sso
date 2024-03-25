@@ -25,6 +25,8 @@ type App struct {
 func New(
 	log *slog.Logger,
 	authService authgrpc.Auth,
+	mailService authgrpc.EmailSender,
+	verificationService authgrpc.Verification,
 	port int,
 ) *App {
 	loggingOpts := []logging.Option{
@@ -48,7 +50,7 @@ func New(
 		logging.UnaryServerInterceptor(InterceptorLogger(log), loggingOpts...),
 	))
 
-	authgrpc.Register(gRPCServer, authService)
+	authgrpc.Register(gRPCServer, authService, mailService, verificationService)
 
 	return &App{
 		log:        log,

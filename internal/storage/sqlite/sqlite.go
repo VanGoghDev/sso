@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"grpc-service-ref/internal/domain/models"
 	"grpc-service-ref/internal/storage"
@@ -45,6 +46,32 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 		var sqliteErr sqlite3.Error
 		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
+}
+
+func (s *Storage) VerifyUser(ctx context.Context, email string) (int64, error) {
+	const op = "storage.sqlite.VerifyUser"
+
+	stmt, err := s.db.Prepare("UPDATE users SET is_verified = true WHERE email = ?")
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res, err := stmt.ExecContext(ctx, email)
+	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sql.ErrNoRows {
+			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		}
 
 		return 0, fmt.Errorf("%s: %w", op, err)
@@ -144,4 +171,67 @@ func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	}
 
 	return isAdmin, nil
+}
+
+func (s *Storage) StoreVerification(ctx context.Context, email string, code string, expiresAt time.Time) (models.VerificationData, error) {
+	const op = "storage.sqlite.StoreVerification"
+
+	stmt, err := s.db.Prepare("INSERT INTO verifications(email, code, expiresAt) VALUES(?, ?, ?)")
+	if err != nil {
+		return models.VerificationData{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res, err := stmt.ExecContext(ctx, email, code, expiresAt)
+	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			return models.VerificationData{}, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+		}
+
+		return models.VerificationData{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res.RowsAffected()
+	// _, err := res.LastInsertId()
+	// if err != nil {
+	// 	return models.VerificationData{}, fmt.Errorf("%s: %w", op, err)
+	// }
+
+	return models.VerificationData{}, nil
+}
+
+func (s *Storage) Verification(ctx context.Context, email string) (models.VerificationData, error) {
+	const op = "storage.sqlite.Verification"
+
+	stmt, err := s.db.Prepare("SELECT * FROM verifications WHERE email = ?")
+	if err != nil {
+		return models.VerificationData{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	row := stmt.QueryRowContext(ctx, email)
+	var verification models.VerificationData
+	err = row.Scan(&verification.Email, &verification.Code, &verification.ExpiresAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.VerificationData{}, fmt.Errorf("%s: %w", op, storage.ErrVerificationNotFound)
+		}
+		return models.VerificationData{}, fmt.Errorf("%s: %w", op, err)
+	}
+	return verification, nil
+}
+
+func (s *Storage) DeleteVerification(ctx context.Context, email string) error {
+	const op = "storage.sqlite.DeleteVerification"
+
+	stmt, err := s.db.Prepare("DELETE from verifications WHERE email = ?")
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	res, err := stmt.ExecContext(ctx, email)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	_ = res
+	return nil
 }
