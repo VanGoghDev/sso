@@ -60,6 +60,8 @@ type Verification interface {
 }
 
 type serverAPI struct {
+	verificationCodeLen           int
+	verificationExpiresAfterHours int
 	ssov1.UnimplementedAuthServer
 	auth         Auth
 	verification Verification
@@ -112,15 +114,6 @@ func (s *serverAPI) Register(
 
 	// save user
 	uid, err := s.auth.RegisterNewUser(ctx, in.GetEmail(), in.GetPassword())
-
-	verificationCode := verification.GenerateRandomString(6)
-	// save verification data
-	result, err := s.verification.StoreVerification(ctx, in.GetEmail(), verificationCode, time.Now().UTC().Add(time.Hour*time.Duration(3)))
-	// send verification email
-	if err := s.emailService.SendEmail("Verify your new account", []string{in.GetEmail()}, verificationCode, []string{}, []string{}, []string{}); err != nil {
-		return nil, status.Error(codes.Internal, "failed to send email")
-	}
-	_ = result
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")
@@ -128,6 +121,18 @@ func (s *serverAPI) Register(
 
 		return nil, status.Error(codes.Internal, "failed to register user")
 	}
+	verificationCode := verification.GenerateRandomString(s.verificationCodeLen)
+	// save verification data
+	result, err := s.verification.StoreVerification(ctx, in.GetEmail(), verificationCode, time.Now().UTC().Add(time.Hour*time.Duration(s.verificationExpiresAfterHours)))
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to register user")
+	}
+
+	// send verification email
+	if err := s.emailService.SendEmail("Verify your new account", []string{in.GetEmail()}, verificationCode, []string{}, []string{}, []string{}); err != nil {
+		return nil, status.Error(codes.Internal, "failed to send email")
+	}
+	_ = result
 
 	return &ssov1.RegisterResponse{UserId: uid}, nil
 }
@@ -160,9 +165,9 @@ func (s *serverAPI) CreateVerification(
 		return nil, status.Error(codes.InvalidArgument, "email is required")
 	}
 
-	verificationCode := verification.GenerateRandomString(6)
+	verificationCode := verification.GenerateRandomString(s.verificationCodeLen)
 	// save verification data
-	result, err := s.verification.StoreVerification(ctx, in.GetEmail(), verificationCode, time.Now().UTC().Add(time.Hour*time.Duration(3)))
+	result, err := s.verification.StoreVerification(ctx, in.GetEmail(), verificationCode, time.Now().UTC().Add(time.Hour*time.Duration(s.verificationExpiresAfterHours)))
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return nil, status.Error(codes.NotFound, "unable to create verification with email provided")

@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Env            string            `yaml:"env" env-default:"local"`
-	StoragePath    string            `yaml:"storage_path" env-required:"true"`
-	GRPC           GRPCConfig        `yaml:"grpc"`
-	EmailService   EmailSenderConfig `yaml:"emailSender"`
-	MigrationsPath string
-	TokenTTL       time.Duration `yaml:"token_ttl" env-default:"1h"`
+	Env            string             `yaml:"env" env-default:"local"`
+	StoragePath    string             `yaml:"storage_path" env-required:"true"`
+	GRPC           GRPCConfig         `yaml:"grpc"`
+	EmailService   EmailSenderConfig  `yaml:"emailSender"`
+	Varification   VerificationConfig `yaml:"verification"`
+	MigrationsPath string             `yaml:"migrations_path"`
+	TokenTTL       time.Duration      `yaml:"token_ttl" env-default:"1h"`
 }
 
 type GRPCConfig struct {
@@ -26,6 +27,11 @@ type EmailSenderConfig struct {
 	Name     string `yaml:"name"`
 	Email    string `yaml:"email"`
 	Password string `yaml:"password"`
+}
+
+type VerificationConfig struct {
+	Len       string `yaml:"len"`
+	LastHours string `yaml:"hours"`
 }
 
 func MustLoad() *Config {
