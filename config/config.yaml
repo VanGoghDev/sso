@@ -1,0 +1,12 @@
+env: "local"
+storage_path: "./storage/sso.db"
+grpc:
+  port: 44044
+  timeout: 5s
+verification:
+  len: 6
+  hours: 3
+emailSender:
+  name: "Name LastName"
+  email: "email@gmail.com"
+  password: "ssss ffff eeee tttt"
