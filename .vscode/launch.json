@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "args": ["-config", "../../config/local_tests.yaml"]
+            "args": ["-config", "../../config/config.yaml"]
         }
     ]
 }

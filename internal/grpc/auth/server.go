@@ -8,6 +8,7 @@ import (
 	"grpc-service-ref/internal/domain/models"
 	"grpc-service-ref/internal/lib/verification"
 	"grpc-service-ref/internal/services/auth"
+	verificationService "grpc-service-ref/internal/services/verification"
 	"grpc-service-ref/internal/storage"
 
 	ssov1 "github.com/VanGoghDev/protos/gen/go/sso"
@@ -30,6 +31,11 @@ type Auth interface {
 		password string,
 	) (userID int64, err error)
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
+	UpdateUser(
+		ctx context.Context,
+		email string,
+		password string,
+	) (userID int64, err error)
 }
 
 type EmailSender interface {
@@ -55,8 +61,12 @@ type Verification interface {
 		ctx context.Context,
 		email string,
 		code string,
-		timestamp time.Time,
+		deleteVerificationAfterAtempt bool,
 	) (result string, err error)
+	DeleteVerification(
+		ctx context.Context,
+		email string,
+	) error
 }
 
 type serverAPI struct {
@@ -197,17 +207,70 @@ func (s *serverAPI) VerifyMail(
 		return nil, status.Error(codes.InvalidArgument, "code is required")
 	}
 
-	result, err := s.verification.Verify(ctx, in.GetEmail(), in.GetCode(), in.Date.AsTime())
-	if err != nil {
-		if errors.Is(err, storage.ErrVerificationNotFound) {
-			return nil, status.Error(codes.NotFound, "verification not found")
-		}
-		if errors.Is(err, storage.ErrVerificationExpired) {
-			return nil, status.Error(codes.Internal, "verification expired")
-		}
-
-		return nil, status.Error(codes.Internal, "failed to verify email")
+	result, err := s.verification.Verify(ctx, in.GetEmail(), in.GetCode(), true)
+	if success, err := validateVerificationResult(err); !success {
+		return nil, err
 	}
 
 	return &ssov1.VerifyMailResponse{Result: result}, nil
+}
+
+func (s *serverAPI) ResetPassword(
+	ctx context.Context,
+	in *ssov1.ResetPasswordRequest,
+) (*ssov1.ResetPasswordResponse, error) {
+	if in.GetEmail() == "" {
+		return nil, status.Error(codes.InvalidArgument, "email is required")
+	}
+
+	if in.GetCode() == "" {
+		return nil, status.Error(codes.InvalidArgument, "code is required")
+	}
+
+	if in.GetNewPassword() == "" {
+		return nil, status.Error(codes.InvalidArgument, "password is required")
+	}
+
+	verificationResult, err := s.verification.Verify(ctx, in.GetEmail(), in.GetCode(), false)
+
+	if success, err := validateVerificationResult(err); !success {
+		return nil, err
+	}
+
+	uid, err := s.auth.UpdateUser(ctx, in.GetEmail(), in.GetNewPassword())
+	if err != nil {
+		if errors.Is(err, auth.ErrPassAreEqual) {
+			return nil, status.Error(codes.InvalidArgument, "passwords should differ")
+		}
+
+		return nil, status.Error(codes.Internal, "failed to update user password")
+	}
+
+	_ = uid
+	_ = verificationResult
+
+	err = s.verification.DeleteVerification(ctx, in.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to delete verification")
+	}
+
+	return &ssov1.ResetPasswordResponse{Success: true}, nil
+}
+
+func validateVerificationResult(err error) (bool, error) {
+	if err != nil {
+		if errors.Is(err, storage.ErrVerificationNotFound) {
+			return false, status.Error(codes.NotFound, "verification not found")
+		}
+		if errors.Is(err, storage.ErrVerificationExpired) {
+			return false, status.Error(codes.Internal, "verification expired")
+		}
+		if errors.Is(err, verificationService.CodesDiffer) {
+			return false, status.Error(codes.PermissionDenied, "codes differ")
+		}
+
+		return false, status.Error(codes.Internal, "failed to verify email")
+	}
+
+	return true, nil
 }

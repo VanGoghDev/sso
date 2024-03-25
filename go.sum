@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/VanGoghDev/protos v0.0.9 h1:8zY5TyfSMvJ/fLbdbb2TZcS+EF8tKSjCJiats1XCD3s=
-github.com/VanGoghDev/protos v0.0.9/go.mod h1:yxyMfvXj/9omgOrsP21knuusOFF8qeCCV04zGetCScE=
+github.com/VanGoghDev/protos v0.0.11 h1:uOrT3Wl22c4qrYvPddatnXdClnLlndIf8uf93zk6gFo=
+github.com/VanGoghDev/protos v0.0.11/go.mod h1:yxyMfvXj/9omgOrsP21knuusOFF8qeCCV04zGetCScE=
 github.com/brianvoe/gofakeit/v6 v6.23.2 h1:lVde18uhad5wII/f5RMVFLtdQNE0HaGFuBUXmYKk8i8=
 github.com/brianvoe/gofakeit/v6 v6.23.2/go.mod h1:Ow6qC71xtwm79anlwKRlWZW6zVq9D2XHE4QSSMP/rU8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

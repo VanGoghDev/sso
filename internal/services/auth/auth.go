@@ -25,6 +25,7 @@ type Auth struct {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrPassAreEqual       = errors.New("codes are equal")
 )
 
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
@@ -38,6 +39,11 @@ type UserSaver interface {
 		ctx context.Context,
 		email string,
 	) (int64, error)
+	UpdateUser(
+		ctx context.Context,
+		user models.User,
+		passHash []byte,
+	) (uid int64, err error)
 }
 
 type UserProvider interface {
@@ -168,4 +174,44 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
 
 	return isAdmin, nil
+}
+
+func (a *Auth) UpdateUser(ctx context.Context, email string, pass string) (int64, error) {
+	const op = "Auth.UpdateUser"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("email", email),
+	)
+
+	log.Info("updating user")
+
+	usr, err := a.usrProvider.User(ctx, email)
+	if err != nil {
+		log.Error("failed to fetch user", sl.Err(err))
+		return 0, fmt.Errorf("%s:%w", op, err)
+	}
+
+	passHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+
+	if equals := bcrypt.CompareHashAndPassword(usr.PassHash, []byte(pass)); equals == nil {
+		a.log.Info("password does not differ")
+
+		return 0, fmt.Errorf("%s: %w", op, ErrPassAreEqual)
+	}
+
+	if err != nil {
+		log.Error("failed to generate password hash", sl.Err(err))
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	id, err := a.usrSaver.UpdateUser(ctx, usr, passHash)
+	if err != nil {
+		log.Error("failed to save user", sl.Err(err))
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
 }

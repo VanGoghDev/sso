@@ -59,6 +59,32 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 	return id, nil
 }
 
+func (s *Storage) UpdateUser(ctx context.Context, user models.User, passHash []byte) (int64, error) {
+	const op = "storage.sqlite.updateuser"
+
+	stmt, err := s.db.Prepare("UPDATE users SET email = ?, pass_hash = ?, is_verified = ? WHERE email = ?")
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res, err := stmt.ExecContext(ctx, user.Email, passHash, user.Verified, user.Email)
+	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sql.ErrNoRows {
+			return 0, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
+}
+
 func (s *Storage) VerifyUser(ctx context.Context, email string) (int64, error) {
 	const op = "storage.sqlite.VerifyUser"
 

@@ -109,7 +109,7 @@ func (v *Verification) Verify(
 	ctx context.Context,
 	email string,
 	code string,
-	timestamp time.Time,
+	deleteVerificationAfterAtempt bool,
 ) (string, error) {
 	const op = "Verification.Verify"
 
@@ -127,12 +127,6 @@ func (v *Verification) Verify(
 	if code == "" {
 		log.Error("empty code")
 		return "", fmt.Errorf("%s: %w", op, EmptyCode)
-	}
-
-	if time.Time.IsZero(timestamp) {
-		log.Error("empty expiresAt")
-
-		return "", fmt.Errorf("%s: %w", op, EmptyExpiresAt)
 	}
 
 	verification, err := v.verificationProvider.Verification(ctx, email)
@@ -156,9 +150,36 @@ func (v *Verification) Verify(
 	}
 
 	// удалить верификацию
-	if err := v.verificationDeleter.DeleteVerification(ctx, email); err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
+	if deleteVerificationAfterAtempt {
+		if err := v.verificationDeleter.DeleteVerification(ctx, email); err != nil {
+			return "", fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	return fmt.Sprintf("%v", id), nil
+}
+
+func (v *Verification) DeleteVerification(
+	ctx context.Context,
+	email string,
+) error {
+	const op = "Verification.Delete"
+
+	log := v.log.With(
+		slog.String("op", op),
+		slog.String("username", email),
+	)
+	log.Info("Deleting verification")
+
+	if email == "" {
+		log.Error("empty email")
+
+		return fmt.Errorf("%s: %w", op, EmptyEmail)
+	}
+
+	if err := v.verificationDeleter.DeleteVerification(ctx, email); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
