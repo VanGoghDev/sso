@@ -28,6 +28,8 @@ func New(
 	mailService authgrpc.EmailSender,
 	verificationService authgrpc.Verification,
 	port int,
+	verificationCodeLen int,
+	verificationExpires int,
 ) *App {
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(
@@ -50,7 +52,7 @@ func New(
 		logging.UnaryServerInterceptor(InterceptorLogger(log), loggingOpts...),
 	))
 
-	authgrpc.Register(gRPCServer, authService, mailService, verificationService)
+	authgrpc.Register(gRPCServer, authService, mailService, verificationService, verificationCodeLen, verificationExpires)
 
 	return &App{
 		log:        log,

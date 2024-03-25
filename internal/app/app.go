@@ -23,6 +23,8 @@ func New(
 	senderName string,
 	senderEmail string,
 	senderPassword string,
+	verificationCodeLen int,
+	verificationExpiresAt int,
 ) *App {
 	storage, err := sqlite.New(storagePath)
 	if err != nil {
@@ -32,7 +34,7 @@ func New(
 	authService := auth.New(log, storage, storage, storage, tokenTTL)
 	mailService := gmail.New(log, senderName, senderEmail, senderPassword)
 	verification := verification.New(log, storage, storage, storage, storage)
-	grpcApp := grpcapp.New(log, authService, mailService, verification, grpcPort)
+	grpcApp := grpcapp.New(log, authService, mailService, verification, grpcPort, verificationCodeLen, verificationExpiresAt)
 
 	return &App{
 		GRPCServer: grpcApp,

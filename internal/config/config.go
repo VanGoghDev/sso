@@ -13,7 +13,7 @@ type Config struct {
 	StoragePath    string             `yaml:"storage_path" env-required:"true"`
 	GRPC           GRPCConfig         `yaml:"grpc"`
 	EmailService   EmailSenderConfig  `yaml:"emailSender"`
-	Varification   VerificationConfig `yaml:"verification"`
+	Verification   VerificationConfig `yaml:"verification"`
 	MigrationsPath string             `yaml:"migrations_path"`
 	TokenTTL       time.Duration      `yaml:"token_ttl" env-default:"1h"`
 }
@@ -30,8 +30,8 @@ type EmailSenderConfig struct {
 }
 
 type VerificationConfig struct {
-	Len       string `yaml:"len"`
-	LastHours string `yaml:"hours"`
+	Len       int `yaml:"len"`
+	LastHours int `yaml:"hours"`
 }
 
 func MustLoad() *Config {

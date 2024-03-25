@@ -22,7 +22,7 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL, cfg.EmailService.Name, cfg.EmailService.Email, cfg.EmailService.Password)
+	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL, cfg.EmailService.Name, cfg.EmailService.Email, cfg.EmailService.Password, cfg.Verification.Len, cfg.Verification.LastHours)
 
 	go func() {
 		application.GRPCServer.MustRun()

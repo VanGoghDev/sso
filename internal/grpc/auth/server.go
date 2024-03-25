@@ -68,8 +68,8 @@ type serverAPI struct {
 	emailService EmailSender
 }
 
-func Register(gRPCServer *grpc.Server, auth Auth, emailService EmailSender, verification Verification) {
-	ssov1.RegisterAuthServer(gRPCServer, &serverAPI{auth: auth, emailService: emailService, verification: verification})
+func Register(gRPCServer *grpc.Server, auth Auth, emailService EmailSender, verification Verification, verificationCodeLen int, verificationExpiresAt int) {
+	ssov1.RegisterAuthServer(gRPCServer, &serverAPI{auth: auth, emailService: emailService, verification: verification, verificationCodeLen: verificationCodeLen, verificationExpiresAfterHours: verificationExpiresAt})
 }
 
 func (s *serverAPI) Login(
