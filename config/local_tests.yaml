@@ -3,3 +3,7 @@ storage_path: "./storage/sso.db"
 grpc:
   port: 44044
   timeout: 10h
+emailSender:
+  name: ""
+  email: "gmail.com"
+  password: "ahi"
